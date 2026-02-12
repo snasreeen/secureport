@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int         @id @default(autoincrement())
+  email               String      @unique
+  passwordHash        String
+  failedLoginAttempts Int         @default(0)
+  lockUntil           DateTime?
+  role                String      @default("user")
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  scans     Scan[]
+  auditLogs AuditLog[]
+  histories ScanHistory[]
+}
+
+model Scan {
+  id                        Int           @id @default(autoincrement())
+  userId                    Int
+  targetIp                  String
+  startPort                 Int
+  endPort                   Int
+  openPorts                 Json
+  ethicalAgreementAcceptedAt DateTime
+  suspicious                Boolean       @default(false)
+  suspiciousReasons         Json?
+  createdAt                 DateTime      @default(now())
+
+  user     User        @relation(fields: [userId], references: [id])
+  histories ScanHistory[]
+}
+
+model ScanHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  scanId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  scan Scan @relation(fields: [scanId], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
